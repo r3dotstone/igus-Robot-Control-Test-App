@@ -1,3 +1,7 @@
+This is a test app to interface igus Robot Control (V14) with python by adapting example code to enable continuous position control of the dryline-SCARA/RL-SCR-0100 (running at 48V).
+
+Below is the README for the example that I cloned from: (https://github.com/CommonplaceRobotics/RobotControlApps)
+
 # MinimalApp Python
 This is the minimal example and simple API for Python.
 
