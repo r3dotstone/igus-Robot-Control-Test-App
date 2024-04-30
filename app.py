@@ -5,6 +5,8 @@ from AppClient import AppClient
 from MinimalApp import MinimalApp
 from DataTypes.Matrix44 import Matrix44
 from visionClass import vision
+import time
+import random
 # from DataTypes.ProgramVariable import NumberVariable, PositionVariable, ProgramVariable
 
 
@@ -149,74 +151,73 @@ app.Connect()
 lastUpdate = datetime.datetime.now()
 
 convVel = 10 #mm/s
-v = vision(convVel,[
-            {"pick": True, "posInt": 246, "time": 1714356330.463, "angle": 92.0, "posNow": 787, "id": 1},
-            {"pick": False, "posInt": 257, "time": 1714356330.877, "angle": 93.4, "posNow": 617, "id": 2},
-            {"pick": True, "posInt": 246, "time": 1714356331.249, "angle": 103.6, "posNow": 427, "id": 3},
-            {"pick": True, "posInt": 244, "time": 1714356331.669, "angle": 84.1, "posNow": 245, "id": 4}
-        ])
+# v = vision(convVel,[
+#             {"pick": True, "posInt": 246, "time": 1714356330.463, "angle": 92.0, "posNow": 787, "id": 1},
+#             {"pick": False, "posInt": 257, "time": 1714356330.877, "angle": 93.4, "posNow": 617, "id": 2},
+#             {"pick": True, "posInt": 246, "time": 1714356331.249, "angle": 103.6, "posNow": 427, "id": 3},
+#             {"pick": True, "posInt": 244, "time": 1714356331.669, "angle": 84.1, "posNow": 245, "id": 4}
+#         ])
 
 matrix = Matrix44()
 
-moveFlag = 0
+moveflag = 0
+posPick = 1700
+posBin = 2000
+sampled = False
+item = {"pick": 1, "pos": 1600, "angle": 0}
 
 try:
     var = 0
     # Keep the app running
-    input("press Enter to continue")
+    timeLast = time.time()
+
     while app.IsConnected():
-        sleep(0.1)
+        # sleep(0.1)
 
         # Run some examples every few seconds
         now = datetime.datetime.now()
-        if now - lastUpdate > datetime.timedelta(seconds=3):
+        if now - lastUpdate > datetime.timedelta(seconds=0.1):
             lastUpdate = now
 
             try:
-                
+                # GET
+                timeNow = time.time()
+                dt = timeNow - timeLast
+                timeLast = timeNow
+                item["pos"] = item["pos"] + (convVel*dt)         
                 moveflag = ExamplePrintNumberVariable(app, "moveflag")
-                status, angle, posY = v.looped()
-                posY = posY - 1500 # make relative to robot frame
-
-                if moveflag == 0: print("moving...")
                 
-                elif moveflag == 1.0:
-                    if status == "picking":
-                        print("picking in app.py...")
-                        posX = 0
-                        posZ = 210
-                        ExampleSetNumberVariable(app, "placeflag", 1)
-                    elif status == "binning":
-                        print("binning in app.py...")
-                        posX = 350
-                        posZ = 210
-                        ExampleSetNumberVariable(app, "placeflag", 0)
-                    elif status == "waiting":
-                        print("waiting in app.py...")
-                        posX = 0
-                        posZ = 210
-                        ExampleSetNumberVariable(app, "placeflag", 0)
-                    matrix.SetX(posX)
-                    matrix.SetY(posY)
-                    matrix.SetZ(posZ)
-                    matrix.SetA(angle)
-                    JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)
+                # SET
+                if item["pos"] >= posPick: passflag = 1
+                else: passflag = 0
+                pickflag = item["pick"]
+                ExampleSetNumberVariable(app, "passflag", passflag)
+                print("passflag: ", passflag)
+                ExampleSetNumberVariable(app, "pickflag", pickflag)
+                print("pickflag: ", pickflag)
+
+                if  (pickflag == 1) and passflag == 1: # picking
+                    print("picking...")
+                    if (sampled == False):
+                        sampled = True
+                        matrix.SetX(465)
+                        matrix.SetY(item["pos"]-1500)
+                        matrix.SetZ(210)
+                        matrix.SetA(item["angle"])
+                        JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)  
+
+                elif (item["pick"] == 0):
+                    print("\nbad item, waiting for good item...\n")
+
+                if moveflag == 1: 
+                    if pickflag == 1: sampled = False
+                    item = {"pick": random.choice([1,0]), "pos": random.randint(1400,1500), "angle": random.randint(-20,20)}
+                    print("new item: ", item)
                     ExampleSetNumberVariable(app, "moveflag", 0)
 
-                else: print("something is wrong!")
-                
-                
-                
-                
-                
-                
-                # var = 300.0
-                # ExamplePrintTCP(app)
-                # ExampleSetNumberVariable(app, "myNrVar", var)
-                # ExamplePrintNumberVariable(app, "myNrVar")
-                # ExamplePrintPositionVariable(app,"pypos")
-                # ExamplePrintPositionVariable(app, "apppos")
-                # value = ExamplePrintNumberVariable(app, "appnum")
+
+                ExamplePrintTCP(app)
+                print("item position: ", item["pos"], "dt: ", dt)
             
             except RuntimeError:
                 pass
@@ -226,6 +227,8 @@ finally:
     app.Disconnect()
     print("Minimal app example stopped")
 
+
+####################################################################
 
     #  def SetPositionVariable(
 #         self,
@@ -240,3 +243,47 @@ finally:
 #         e2: float,
 #         e3: float,
 #     ):
+
+                # moveflag = ExamplePrintNumberVariable(app, "moveflag")
+                # status, angle, posY = v.looped()
+                # posY = posY - 1500 # make relative to robot frame
+
+                # if moveflag == 0: print("moving...")
+                
+                # elif moveflag == 1.0:
+                #     if status == "picking":
+                #         print("picking in app.py...")
+                #         posX = 400#0
+                #         posZ = 210
+                #         ExampleSetNumberVariable(app, "placeflag", 1)
+                #         ExampleSetNumberVariable(app, "moveflag", 0)
+                        
+                #     elif status == "binning":
+                #         print("binning in app.py...")
+                #         posX = #350
+                #         posZ = #210
+                #         ExampleSetNumberVariable(app, "placeflag", 0)
+                #         ExampleSetNumberVariable(app, "moveflag", 0)
+                #     elif status == "waiting":
+                #         print("waiting in app.py...")
+                #         posX = 0
+                #         posZ = 210
+                #         ExampleSetNumberVariable(app, "placeflag", 0)
+                #     matrix.SetX(posX)
+                #     matrix.SetY(posY+1000)
+                #     matrix.SetZ(posZ)
+                #     matrix.SetA(angle)
+                #     JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)
+
+                # else: print("something is wrong!")
+
+
+
+
+                # var = 300.0
+                # ExamplePrintTCP(app)
+                # ExampleSetNumberVariable(app, "myNrVar", var)
+                # ExamplePrintNumberVariable(app, "myNrVar")
+                # ExamplePrintPositionVariable(app,"pypos")
+                # ExamplePrintPositionVariable(app, "apppos")
+                # value = ExamplePrintNumberVariable(app, "appnum")

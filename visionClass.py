@@ -18,59 +18,76 @@ class vision():
         self.dfBin = pd.DataFrame(columns=self.dfQ.columns)
 
         self.convVel = convVel # mm/s
-        self.posPick = 2000 # mm from front edge of scanner
+        self.posPick = 1000 # mm from front edge of scanner
         self.timeLast = time.time()
         self.printTimeLast = 0
+        self.itemPos = 0
 
     def looped(self): # goes in a continuous loop
 
         timeNow = time.time()
         dt = timeNow - self.timeLast
         self.timeLast = timeNow
-        self.dfQ["posNow"] = self.dfQ["posNow"] + (self.convVel*dt)
 
-        dfPick = self.dfQ[(self.dfQ["pick"] == True) & (self.dfQ["posNow"] >= self.posPick)] 
+        self.itemPos = 900 + self.itemPos + (self.convVel*dt)
 
-        if self.dfQ.empty: 
-            print("no more cookies :(") # picked all the cookies
-            status = "error"            
-            angle = 90 # get ready to pick next good cookie
-            position = 1500 + 350
-
-        elif (self.dfQ.at[self.dfQ.index[0],"pick"] == True) and (self.dfQ.at[self.dfQ.index[0],"posNow"] >= self.posPick): # current pick target is good
-            print("picking id: ", self.dfQ.at[self.dfQ.index[0],"id"])
-            row_to_append = self.dfQ.loc[[self.dfQ.index[0]]]
-            self.dfBox = self.dfBox.append(row_to_append, ignore_index=True)
-            self.dfQ = self.dfQ.drop(self.dfQ.index[0])
+        if self.itemPos >= self.posPick:
             status = "picking"
-            angle = self.dfBox.at[self.dfBox.index[0],"angle"]
-            position = self.dfBox.at[self.dfBox.index[0],"posNow"]
+            angle = 90 
+            position = self.itemPos + 1500
 
-        elif (self.dfQ.at[self.dfQ.index[0],"pick"] == False) and (self.dfQ.at[self.dfQ.index[0],"posNow"] >= self.posPick): # current pick target is bad
-            print("binning id: ", self.dfQ.at[self.dfQ.index[0],"id"])
-            row_to_append = self.dfQ.loc[[self.dfQ.index[0]]]
-            self.dfBin = self.dfBin.append(row_to_append, ignore_index=True)
-            self.dfQ = self.dfQ.drop(self.dfQ.index[0])
-            status = "binning"            
-            angle = 90 # get ready to pick next good cookie
-            position = 1500 + 350
-
-        elif len(dfPick) > 1: # something has gone wrong and there is more than one cookie beyond the pick position
-            print("cookie overload!")
-            status = "error"
-            angle = 90 # get ready to pick next good cookie
-            position = 1500 + 350
-
-        else: 
-            print("no cookies to pick :(") # all the cookies haven't arrived or dissapeared
+        else:
             status = "waiting"
-            angle = 90 # get ready to pick next good cookie
-            position = 1500 + 350
+            angle = 0
+            postion = 0 + 1500
+            self.itemPos = 0
 
-        #if time.time() - self.printTimeLast >= 0.2:
-        print("dt=",dt,"\n",self.dfQ)
-        print("angle: ", angle, "position: ", position,"\n")
-            #self.printTimeLast = timeNow
+        print("item position: ",self.itemPos)
+
+        # self.dfQ["posNow"] = self.dfQ["posNow"] + (self.convVel*dt)
+
+        # dfPick = self.dfQ[(self.dfQ["pick"] == True) & (self.dfQ["posNow"] >= self.posPick)] 
+
+        # if self.dfQ.empty: 
+        #     print("no more cookies :(") # picked all the cookies
+        #     status = "error"            
+        #     angle = 90 # get ready to pick next good cookie
+        #     position = 1500 + 350
+
+        # elif (self.dfQ.at[self.dfQ.index[0],"pick"] == True) and (self.dfQ.at[self.dfQ.index[0],"posNow"] >= self.posPick): # current pick target is good
+        #     print("picking id: ", self.dfQ.at[self.dfQ.index[0],"id"])
+        #     row_to_append = self.dfQ.loc[[self.dfQ.index[0]]]
+        #     self.dfBox = self.dfBox.append(row_to_append, ignore_index=True)
+        #     self.dfQ = self.dfQ.drop(self.dfQ.index[0])
+        #     status = "picking"
+        #     angle = self.dfBox.at[self.dfBox.index[0],"angle"]
+        #     position = self.dfBox.at[self.dfBox.index[0],"posNow"]
+
+        # elif (self.dfQ.at[self.dfQ.index[0],"pick"] == False) and (self.dfQ.at[self.dfQ.index[0],"posNow"] >= self.posPick): # current pick target is bad
+        #     print("binning id: ", self.dfQ.at[self.dfQ.index[0],"id"])
+        #     row_to_append = self.dfQ.loc[[self.dfQ.index[0]]]
+        #     self.dfBin = self.dfBin.append(row_to_append, ignore_index=True)
+        #     self.dfQ = self.dfQ.drop(self.dfQ.index[0])
+        #     status = "binning"            
+        #     angle = 90 # get ready to pick next good cookie
+        #     position = 1500 + 350
+
+        # elif len(dfPick) > 1: # something has gone wrong and there is more than one cookie beyond the pick position
+        #     print("cookie overload!")
+        #     status = "error"
+        #     angle = 90 # get ready to pick next good cookie
+        #     position = 1500 + 350
+
+        # else: 
+        #     print("no cookies to pick :(") # all the cookies haven't arrived or dissapeared
+        #     status = "waiting"
+        #     angle = 90 # get ready to pick next good cookie
+        #     position = 1500 + 350
+
+        # #if time.time() - self.printTimeLast >= 0.2:
+        # print("dt=",dt,"\n",self.dfQ)
+        # print("angle: ", angle, "position: ", position,"\n")
+        #     #self.printTimeLast = timeNow
 
         return status, angle, position # angle for A axis to navigate to in base frame, 
                                 # Y position of current pick target, relative to farthest up-conveyor edge of the camera pod
