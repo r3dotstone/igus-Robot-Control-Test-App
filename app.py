@@ -150,7 +150,7 @@ app.Connect()
 # time of the last example run
 lastUpdate = datetime.datetime.now()
 
-convVel = 10 #mm/s
+convVel = 50 #mm/s
 # v = vision(convVel,[
 #             {"pick": True, "posInt": 246, "time": 1714356330.463, "angle": 92.0, "posNow": 787, "id": 1},
 #             {"pick": False, "posInt": 257, "time": 1714356330.877, "angle": 93.4, "posNow": 617, "id": 2},
@@ -192,12 +192,11 @@ try:
                 else: passflag = 0
                 pickflag = item["pick"]
                 ExampleSetNumberVariable(app, "passflag", passflag)
-                print("passflag: ", passflag)
+                print("passflag: ", passflag,"pickflag: ", pickflag)
                 ExampleSetNumberVariable(app, "pickflag", pickflag)
-                print("pickflag: ", pickflag)
-
+                
                 if  (pickflag == 1) and passflag == 1: # picking
-                    print("picking...")
+                    print("STATE: picking...")
                     if (sampled == False):
                         sampled = True
                         matrix.SetX(465)
@@ -207,17 +206,19 @@ try:
                         JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)  
 
                 elif (item["pick"] == 0):
-                    print("\nbad item, waiting for good item...\n")
+                    print("STATE: bad item, waiting for good item...")
+
+                else: print("STATE: waiting...")
 
                 if moveflag == 1: 
                     if pickflag == 1: sampled = False
                     item = {"pick": random.choice([1,0]), "pos": random.randint(1400,1500), "angle": random.randint(-20,20)}
-                    print("new item: ", item)
                     ExampleSetNumberVariable(app, "moveflag", 0)
 
 
                 ExamplePrintTCP(app)
-                print("item position: ", item["pos"], "dt: ", dt)
+                print("item: ", item) 
+                print("dt: ", dt, "\n")
             
             except RuntimeError:
                 pass
