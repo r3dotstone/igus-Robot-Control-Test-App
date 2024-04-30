@@ -4,6 +4,7 @@ from time import sleep
 from AppClient import AppClient
 from MinimalApp import MinimalApp
 from DataTypes.Matrix44 import Matrix44
+from visionClass import vision
 # from DataTypes.ProgramVariable import NumberVariable, PositionVariable, ProgramVariable
 
 
@@ -147,9 +148,22 @@ app.Connect()
 # time of the last example run
 lastUpdate = datetime.datetime.now()
 
+convVel = 10 #mm/s
+v = vision(convVel,[
+            {"pick": True, "posInt": 246, "time": 1714356330.463, "angle": 92.0, "posNow": 787, "id": 1},
+            {"pick": False, "posInt": 257, "time": 1714356330.877, "angle": 93.4, "posNow": 617, "id": 2},
+            {"pick": True, "posInt": 246, "time": 1714356331.249, "angle": 103.6, "posNow": 427, "id": 3},
+            {"pick": True, "posInt": 244, "time": 1714356331.669, "angle": 84.1, "posNow": 245, "id": 4}
+        ])
+
+matrix = Matrix44()
+
+moveFlag = 0
+
 try:
     var = 0
     # Keep the app running
+    input("press Enter to continue")
     while app.IsConnected():
         sleep(0.1)
 
@@ -159,19 +173,51 @@ try:
             lastUpdate = now
 
             try:
-                var = 300.0
-                matrix = Matrix44()
-                matrix.SetX(400)
-                matrix.SetY(20)
-                matrix.SetZ(var)
-                ExamplePrintTCP(app)
+                
+                moveflag = ExamplePrintNumberVariable(app, "moveflag")
+                status, angle, posY = v.looped()
+                posY = posY - 1500 # make relative to robot frame
+
+                if moveflag == 0: print("moving...")
+                
+                elif moveflag == 1.0:
+                    if status == "picking":
+                        print("picking in app.py...")
+                        posX = 0
+                        posZ = 210
+                        ExampleSetNumberVariable(app, "placeflag", 1)
+                    elif status == "binning":
+                        print("binning in app.py...")
+                        posX = 350
+                        posZ = 210
+                        ExampleSetNumberVariable(app, "placeflag", 0)
+                    elif status == "waiting":
+                        print("waiting in app.py...")
+                        posX = 0
+                        posZ = 210
+                        ExampleSetNumberVariable(app, "placeflag", 0)
+                    matrix.SetX(posX)
+                    matrix.SetY(posY)
+                    matrix.SetZ(posZ)
+                    matrix.SetA(angle)
+                    JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)
+                    ExampleSetNumberVariable(app, "moveflag", 0)
+
+                else: print("something is wrong!")
+                
+                
+                
+                
+                
+                
+                # var = 300.0
+                # ExamplePrintTCP(app)
                 # ExampleSetNumberVariable(app, "myNrVar", var)
                 # ExamplePrintNumberVariable(app, "myNrVar")
-                JadenSetPositionMatrix(app, "pypos", matrix,0,0,0)
-                ExamplePrintPositionVariable(app,"pypos")
+                # ExamplePrintPositionVariable(app,"pypos")
                 # ExamplePrintPositionVariable(app, "apppos")
                 # value = ExamplePrintNumberVariable(app, "appnum")
-                # ExampleSetNumberVariable(app, "appnum", value + 1)
+            
             except RuntimeError:
                 pass
 
